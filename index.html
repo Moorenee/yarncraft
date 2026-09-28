@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YarnCraft Companion | Stash & WIP Tracker</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <meta name="theme-color" content="#1A3311">
+  <link rel="stylesheet" href="styles.css">
+  <!-- Tailwind CSS CDN for utility styling -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            craftGreen: '#1A3311',
+            craftLime: '#91E758',
+            craftCream: '#F6F8F2',
+            craftPill: '#EEF3E9'
+          },
+          borderRadius: {
+            'card': '28px'
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Official Google Firebase SDK (v10.12.0) for Google Sign-In & Cloud Firestore Sync -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
+</head>
+<body>
+  <!-- Ambient background curves -->
+  <div class="bg-curves"></div>
+
+  <!-- Full Responsive Website Container -->
+  <div class="web-app-container">
+
+    <!-- Top Navigation Bar Only (Always at the top) -->
+    <header id="siteHeader" class="site-header" style="display: none;">
+      <div class="site-nav-inner">
+        <!-- Logo -->
+        <div class="flex items-center justify-between">
+          <a href="javascript:void(0)" class="site-logo" onclick="app.navigate('dashboard')">
+            <div class="site-logo-icon">🧶</div>
+            <div>
+              <span>YarnCraft</span>
+              <span class="text-xs block font-medium text-craftLime -mt-1 tracking-normal font-sans">Companion</span>
+            </div>
+          </a>
+        </div>
+
+        <!-- Navigation Links (Top Bar Only) -->
+        <nav class="site-nav-links">
+          <button class="site-nav-link active" data-tab="dashboard" onclick="app.navigate('dashboard')">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+            Dashboard
+          </button>
+          <button class="site-nav-link" data-tab="stash" onclick="app.navigate('stash')">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+            Yarn Stash
+          </button>
+          <button class="site-nav-link" data-tab="projects" onclick="app.navigate('projects')">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+            Projects (WIPs)
+          </button>
+          <button class="site-nav-link" data-tab="hooks" onclick="app.navigate('hooks')">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879a3 3 0 11-4.242-4.242L10.757 7.757"/></svg>
+            Hooks Collection
+          </button>
+          <button class="site-nav-link" data-tab="profile" onclick="app.navigate('profile')">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            Settings & Profile
+          </button>
+        </nav>
+
+        <!-- Right User Actions -->
+        <div class="hidden md:flex items-center gap-3">
+          <!-- Real-time Cloud Sync Badge -->
+          <div id="cloudSyncBadge" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-sm" title="Real-time Cloud Sync with Google Firestore">
+            <span id="cloudSyncDot" class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <span id="cloudSyncLabel">Cloud Synced</span>
+          </div>
+
+          <button class="btn-accent !py-2 !px-4 text-xs font-bold" onclick="app.openAddProject()">
+            + New Project
+          </button>
+          <button class="site-nav-link !p-2" title="Settings & Profile" onclick="app.navigate('profile')">
+            <div id="navUserAvatar" class="w-8 h-8 rounded-full bg-craftPill text-craftGreen flex items-center justify-center font-bold text-sm overflow-hidden">
+              🧶
+            </div>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="main-content">
+
+      <!-- =====================================================================
+           SCREEN 1: WELCOME / ONBOARDING (Art Style from Reference)
+           ===================================================================== -->
+      <section id="screen-welcome" class="screen-container active">
+        <div class="auth-box-wrapper">
+          <div class="craft-card text-center p-8 sm:p-10">
+            <!-- Minimalist Line Illustration -->
+            <div class="w-full flex justify-center mb-6">
+              <div class="relative w-56 h-56 flex items-center justify-center">
+                <svg class="w-52 h-52" viewBox="0 0 200 200" fill="none" stroke="#1A3311" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M 30 150 Q 100 155 170 150" stroke-width="1.8" />
+                  <path d="M 75 145 C 75 120, 85 105, 100 105 C 115 105, 125 120, 125 145 Z" fill="#EEF3E9" />
+                  <path d="M 82 118 Q 65 128 72 142" />
+                  <path d="M 118 118 Q 135 128 128 142" />
+                  <line x1="120" y1="145" x2="90" y2="135" stroke="#91E758" stroke-width="3" />
+                  <circle cx="90" cy="135" r="2" fill="#1A3311" />
+                  <circle cx="100" cy="80" r="18" fill="#FFFFFF" />
+                  <circle cx="95" cy="79" r="4.5" />
+                  <circle cx="105" cy="79" r="4.5" />
+                  <path d="M 99.5 79 L 100.5 79" />
+                  <path d="M 97 86 Q 100 89 103 86" />
+                  <path d="M 83 75 Q 80 62 95 62 Q 100 56 108 62 Q 118 60 117 74" fill="#1A3311" />
+                  <circle cx="100" cy="56" r="8" fill="#1A3311" />
+                  <path d="M 82 78 C 80 65, 120 65, 118 78" stroke-width="3" />
+                  <rect x="79" y="75" width="5" height="12" rx="2.5" fill="#1A3311" />
+                  <rect x="116" y="75" width="5" height="12" rx="2.5" fill="#1A3311" />
+                  <ellipse cx="50" cy="142" rx="18" ry="12" fill="#FFFFFF" />
+                  <path d="M 32 142 Q 50 160 68 142" fill="#FFFFFF" />
+                  <circle cx="50" cy="132" r="12" fill="#EBF9E1" stroke="#91E758" stroke-width="2" />
+                  <path d="M 44 128 Q 52 133 48 140" stroke="#1A3311" stroke-width="1.5" />
+                  <path d="M 48 123 Q 56 128 54 136" stroke="#1A3311" stroke-width="1.5" />
+                  <path d="M 60 130 Q 75 125 90 135" stroke="#91E758" stroke-dasharray="2 2" stroke-width="2" />
+                  <path d="M 140 85 C 136 78, 127 82, 134 92 L 140 98 L 146 92 C 153 82, 144 78, 140 85 Z" fill="#91E758" stroke="none" />
+                </svg>
+              </div>
+            </div>
+
+            <h2 class="text-3xl font-extrabold text-craftGreen tracking-tight mb-2">YarnCraft Companion</h2>
+            <p class="text-sm text-gray-500 font-medium leading-relaxed mb-6">
+              Sign in with your Google account to create your craft profile and track your yarns, hooks, and projects.
+            </p>
+
+            <!-- Step indicator dashes -->
+            <div class="flex gap-2 w-full max-w-xs mx-auto mb-8">
+              <div class="h-1 flex-1 rounded-full bg-craftLime"></div>
+              <div class="h-1 flex-1 rounded-full bg-craftLime"></div>
+              <div class="h-1 flex-1 rounded-full bg-gray-200"></div>
+            </div>
+
+            <!-- Action Buttons (Google Sign-In Primary) -->
+            <div class="space-y-3.5 w-full max-w-sm mx-auto">
+              <!-- Official Firebase Google Sign-In Button -->
+              <button class="btn-primary w-full !bg-craftGreen hover:!bg-black flex items-center justify-center gap-3 py-3.5 shadow-lg active:scale-95 transition-all" onclick="app.signInWithGoogle()">
+                <svg class="w-5 h-5 bg-white rounded-full p-0.5" viewBox="0 0 24 24"><path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.4 1 3.5 3.6 1.6 7.4l3.7 2.9C6.2 7.4 8.9 5 12 5z"/><path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.6h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.9z"/><path fill="#FBBC05" d="M5.3 14.7c-.2-.7-.4-1.5-.4-2.7s.1-2 .4-2.7L1.6 6.4C.6 8.3 0 10.1 0 12s.6 3.7 1.6 5.6l3.7-2.9z"/><path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3.1 0-5.8-2.1-6.7-5.1L1.6 16.1C3.5 20 7.4 23 12 23z"/></svg>
+                <span class="font-bold">Sign In with Google</span>
+              </button>
+
+              <div class="relative flex py-1 items-center">
+                <div class="flex-grow border-t border-gray-200"></div>
+                <span class="flex-shrink mx-4 text-xs text-gray-400 font-medium">or continue offline</span>
+                <div class="flex-grow border-t border-gray-200"></div>
+              </div>
+
+              <button class="btn-pill-light w-full" onclick="app.continueAsGuest()">
+                <svg class="w-4 h-4 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                Continue as Guest
+              </button>
+
+              <button class="text-xs text-gray-500 hover:text-craftGreen underline pt-1" onclick="app.navigate('login')">
+                Or sign in with email / password
+              </button>
+            </div>
+
+            <p class="text-xs text-gray-400 mt-6">Secure Persistent Database · Automatic Account Sync</p>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- =====================================================================
+           SCREEN 2: LOGIN & SIGN UP (Email + Real Google Connection)
+           ===================================================================== -->
+      <section id="screen-login" class="screen-container">
+        <div class="auth-box-wrapper">
+          <div class="craft-card p-8 sm:p-10">
+            <button class="nav-btn mb-4" onclick="app.navigate('welcome')">
+              <svg class="w-5 h-5 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+            </button>
+
+            <h2 id="authHeading" class="text-3xl font-extrabold text-craftGreen text-center mb-6">Login</h2>
+
+            <form id="authForm" onsubmit="app.handleAuthSubmit(event)" class="space-y-4">
+              <!-- Name (Sign Up only) -->
+              <div id="authNameField" class="input-pill-wrapper" style="display: none;">
+                <svg class="input-pill-icon w-5 h-5 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                <input type="text" id="authName" class="input-pill" placeholder="Your Name or Nickname">
+              </div>
+
+              <!-- Email -->
+              <div class="input-pill-wrapper">
+                <svg class="input-pill-icon w-5 h-5 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                <input type="email" id="authEmail" class="input-pill" placeholder="Email Address" required autocomplete="email">
+              </div>
+
+              <!-- Password -->
+              <div class="input-pill-wrapper">
+                <svg class="input-pill-icon w-5 h-5 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                <input type="password" id="authPassword" class="input-pill" placeholder="Password" required autocomplete="current-password">
+                <button type="button" class="input-pill-end-btn" onclick="app.togglePasswordVisibility('authPassword')">
+                  <svg class="w-5 h-5 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                </button>
+              </div>
+
+              <div class="text-right pt-0.5">
+                <a href="javascript:void(0)" class="text-xs font-semibold text-gray-500 hover:text-craftGreen" onclick="app.showToast('Tip: You can continue as guest anytime', '💡')">Forgot Password?</a>
+              </div>
+
+              <button type="submit" id="authSubmitBtn" class="btn-primary w-full mt-4">
+                Login
+              </button>
+            </form>
+
+            <div class="relative flex py-6 items-center">
+              <div class="flex-grow border-t border-gray-200"></div>
+              <span class="flex-shrink mx-4 text-xs text-gray-400 font-medium">or</span>
+              <div class="flex-grow border-t border-gray-200"></div>
+            </div>
+
+            <!-- Google Sign-In & Alternative Buttons -->
+            <div class="space-y-3">
+              <!-- Official Firebase Google Button -->
+              <button class="btn-pill-light w-full flex items-center justify-center gap-2.5 font-bold !py-3 shadow-sm hover:border-craftGreen" onclick="app.signInWithGoogle()">
+                <svg class="w-5 h-5" viewBox="0 0 24 24"><path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.4 1 3.5 3.6 1.6 7.4l3.7 2.9C6.2 7.4 8.9 5 12 5z"/><path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.6h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.9z"/><path fill="#FBBC05" d="M5.3 14.7c-.2-.7-.4-1.5-.4-2.7s.1-2 .4-2.7L1.6 6.4C.6 8.3 0 10.1 0 12s.6 3.7 1.6 5.6l3.7-2.9z"/><path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3.1 0-5.8-2.1-6.7-5.1L1.6 16.1C3.5 20 7.4 23 12 23z"/></svg>
+                Sign in with Google Account
+              </button>
+
+              <button class="btn-accent w-full" onclick="app.loginDemoUser('Apple')">
+                <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.89c.67-.82 1.13-1.96 1.01-3.1-.98.04-2.16.66-2.85 1.48-.61.71-1.14 1.87-1 2.99 1.09.08 2.18-.56 2.84-1.37z"/></svg>
+                Continue with Apple
+              </button>
+
+              <button class="btn-pill-light w-full" onclick="app.continueAsGuest()">
+                <svg class="w-4 h-4 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                Continue As Guest
+              </button>
+            </div>
+
+            <!-- Toggle Login / Sign Up -->
+            <div class="text-center mt-8">
+              <span id="authToggleText" class="text-sm text-gray-500 font-medium">Need an account?</span>
+              <button type="button" id="authToggleBtn" class="text-sm font-bold text-craftGreen ml-1 underline" onclick="app.toggleAuthMode()">Sign up</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- =====================================================================
+           SCREEN 3: MAIN DASHBOARD (Shows BOTH Ongoing Projects & Yarn Stash)
+           ===================================================================== -->
+      <section id="screen-dashboard" class="screen-container">
+        <!-- Top Banner Header -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+          <div>
+            <span class="text-xs font-bold uppercase tracking-wider text-gray-400">Welcome Back</span>
+            <h2 id="userGreeting" class="text-3xl font-black text-craftGreen tracking-tight">Hi, Crafter ✨</h2>
+            <p class="text-sm text-gray-500 font-medium mt-1">Here is the overview of your ongoing crochet projects and yarn inventory.</p>
+          </div>
+          <div class="flex gap-3">
+            <button class="btn-accent text-sm !py-2.5 !px-5" onclick="app.openAddProject()">
+              + New Project
+            </button>
+            <button class="btn-primary text-sm !py-2.5 !px-5" onclick="app.openAddYarn()">
+              + Add Yarn
+            </button>
+          </div>
+        </div>
+
+        <!-- 4 Stat Summary Cards Grid -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+          <div class="craft-card p-5">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-gray-400">Active WIPs</span>
+              <span class="w-8 h-8 rounded-full bg-craftPill flex items-center justify-center text-sm">⏳</span>
+            </div>
+            <p class="text-3xl font-black text-craftGreen mt-2" id="statProjectsCount">0</p>
+            <span class="text-xs text-gray-500 font-medium">In progress</span>
+          </div>
+
+          <div class="craft-card p-5">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-gray-400">Yarn Stash</span>
+              <span class="w-8 h-8 rounded-full bg-craftPill flex items-center justify-center text-sm">🧶</span>
+            </div>
+            <p class="text-3xl font-black text-craftGreen mt-2" id="statYarnCount">0</p>
+            <span class="text-xs text-gray-500 font-medium">Total skeins</span>
+          </div>
+
+          <div class="craft-card p-5">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-gray-400">Completed</span>
+              <span class="w-8 h-8 rounded-full bg-green-50 text-green-700 flex items-center justify-center text-sm">🎉</span>
+            </div>
+            <p class="text-3xl font-black text-craftGreen mt-2" id="statDoneCount">0</p>
+            <span class="text-xs text-gray-500 font-medium">Finished items</span>
+          </div>
+
+          <div class="craft-card p-5">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-gray-400">Crochet Hooks</span>
+              <span class="w-8 h-8 rounded-full bg-craftPill flex items-center justify-center text-sm">🥢</span>
+            </div>
+            <p class="text-3xl font-black text-craftGreen mt-2" id="statHooksCount">0</p>
+            <span class="text-xs text-gray-500 font-medium">Tools in kit</span>
+          </div>
+        </div>
+
+        <!-- SECTION A: Ongoing Projects (With visual progress bars) -->
+        <div class="mb-12">
+          <div class="flex items-center justify-between mb-5">
+            <div class="flex items-center gap-2.5">
+              <span class="w-3 h-3 rounded-full bg-craftLime"></span>
+              <h3 class="text-2xl font-black text-craftGreen">Ongoing Projects</h3>
+            </div>
+            <button class="text-sm font-bold text-craftGreen hover:underline" onclick="app.navigate('projects')">
+              View All Projects &rarr;
+            </button>
+          </div>
+
+          <div id="dashboardProjectsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <!-- SECTION B: Yarn Stash Inventory (With +/- Amount Steppers) -->
+        <div>
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
+            <div class="flex items-center gap-2.5">
+              <span class="w-3 h-3 rounded-full bg-craftGreen"></span>
+              <h3 class="text-2xl font-black text-craftGreen">Yarn Stash Quick Inventory</h3>
+            </div>
+
+            <!-- Dropdown Filter -->
+            <div class="flex items-center gap-3">
+              <select id="dashboardYarnFilter" class="select-pill text-xs py-2 px-4 max-w-xs" onchange="app.renderDashboardYarns()">
+                <option value="ALL">All Yarn Types (No filter)</option>
+              </select>
+              <button class="text-sm font-bold text-craftGreen hover:underline whitespace-nowrap" onclick="app.navigate('stash')">
+                Full Stash &rarr;
+              </button>
+            </div>
+          </div>
+
+          <div id="dashboardYarnsList" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+      </section>
+
+
+      <!-- =====================================================================
+           SCREEN 4: YARN STASH PAGE (Filter dropdown, +/- controls, Manage Types)
+           ===================================================================== -->
+      <section id="screen-stash" class="screen-container">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div>
+            <h2 class="text-3xl font-black text-craftGreen tracking-tight">Yarn Stash Library</h2>
+            <p class="text-sm text-gray-500 font-medium">Filter by category or adjust skein counts with instant + / - steppers.</p>
+          </div>
+          <div class="flex gap-2">
+            <button class="btn-pill-light text-xs !py-2.5 !px-4" onclick="app.openManageTypesModal()">
+              <svg class="w-4 h-4 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+              Manage Yarn Types
+            </button>
+            <button class="btn-accent text-xs !py-2.5 !px-5" onclick="app.openAddYarn()">
+              + Add New Yarn
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter & Search Toolbar -->
+        <div class="craft-card p-5 mb-8">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Type Dropdown Filter (Requirement: Choose yarn using dropdown; default shows all) -->
+            <div>
+              <label class="block text-xs font-bold text-craftGreen mb-1.5">Filter by Yarn Type:</label>
+              <select id="stashTypeFilter" class="select-pill" onchange="app.renderStashPage()">
+                <option value="ALL">All Yarn Types (No filter)</option>
+              </select>
+            </div>
+
+            <!-- Search input -->
+            <div>
+              <label class="block text-xs font-bold text-craftGreen mb-1.5">Search Yarn:</label>
+              <div class="input-pill-wrapper !mb-0">
+                <svg class="input-pill-icon w-5 h-5 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                <input type="text" id="stashSearchInput" class="input-pill" placeholder="Search by name, color, dye lot..." oninput="app.renderStashPage()">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Yarn Items Grid -->
+        <div id="stashItemsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <!-- Populated dynamically -->
+        </div>
+      </section>
+
+
+      <!-- =====================================================================
+           SCREEN 5: BUILD / ADD / EDIT YARN PAGE
+           ===================================================================== -->
+      <section id="screen-yarn-form" class="screen-container">
+        <div class="max-w-2xl mx-auto">
+          <div class="flex items-center gap-3 mb-6">
+            <button class="nav-btn" onclick="app.navigate('stash')">
+              <svg class="w-5 h-5 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+            </button>
+            <h2 id="yarnFormTitle" class="text-3xl font-black text-craftGreen">Add New Yarn</h2>
+          </div>
+
+          <div class="craft-card p-6 sm:p-8">
+            <form id="yarnForm" onsubmit="app.handleSaveYarn(event)" class="space-y-5">
+              <input type="hidden" id="yarnFormId">
+
+              <!-- Photo Capture & Live Preview -->
+              <div>
+                <label class="block text-xs font-bold text-craftGreen mb-2">Yarn Photo (Take Photo or Upload Image)</label>
+                <div id="yarnPhotoPreviewBox" class="image-thumbnail-box" onclick="app.triggerPhotoUpload('yarnPhotoInput')">
+                  <img id="yarnPhotoImg" src="" class="hidden" alt="Yarn photo">
+                  <div id="yarnPhotoPlaceholder" class="text-center p-6">
+                    <div class="w-14 h-14 rounded-full bg-white flex items-center justify-center mx-auto mb-2 text-craftGreen shadow-sm">
+                      <svg class="w-7 h-7 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    </div>
+                    <p class="text-sm font-bold text-craftGreen">Click to Take Photo or Upload Image</p>
+                    <p class="text-xs text-gray-400 mt-1">Supports smartphone camera directly or photo library</p>
+                  </div>
+                </div>
+
+                <input type="file" id="yarnPhotoInput" accept="image/*" class="hidden" onchange="app.handleImageSelected(event, 'yarn')">
+
+                <div class="flex justify-end mt-2">
+                  <button type="button" class="text-xs font-bold text-craftGreen flex items-center gap-1.5 hover:underline" onclick="app.openWebcamModal('yarn')">
+                    <svg class="w-4 h-4 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                    Snap with Webcam
+                  </button>
+                </div>
+              </div>
+
+              <!-- Yarn Name -->
+              <div>
+                <label class="block text-xs font-bold text-craftGreen mb-1.5">Yarn Name / Brand *</label>
+                <input type="text" id="yarnFormName" class="input-pill no-icon" placeholder="e.g. Pastel Mint 5-Ply Milk Cotton" required>
+              </div>
+
+              <!-- Yarn Type Dropdown -->
+              <div>
+                <div class="flex justify-between items-center mb-1.5">
+                  <label class="block text-xs font-bold text-craftGreen">Yarn Type (Category) *</label>
+                  <button type="button" class="text-xs font-bold text-craftGreen underline" onclick="app.openManageTypesModal()">+ Add New Category</button>
+                </div>
+                <select id="yarnFormType" class="select-pill" required></select>
+              </div>
+
+              <!-- Amount (+/- Stepper) -->
+              <div>
+                <label class="block text-xs font-bold text-craftGreen mb-1.5">Quantity (Skeins / Balls) *</label>
+                <div class="flex items-center gap-4">
+                  <div class="stepper-container">
+                    <button type="button" class="stepper-btn" onclick="app.adjustFormStepper('yarnFormAmount', -1)">-</button>
+                    <input type="number" id="yarnFormAmount" class="stepper-count w-16 bg-transparent text-center font-black text-lg outline-none" value="1" min="0" step="1">
+                    <button type="button" class="stepper-btn" onclick="app.adjustFormStepper('yarnFormAmount', 1)">+</button>
+                  </div>
+                  <span class="text-xs text-gray-500 font-medium">You can quickly tap + / - anytime on the card</span>
+                </div>
+              </div>
+
+              <!-- Colorway / Dye Lot / Notes -->
+              <div>
+                <label class="block text-xs font-bold text-craftGreen mb-1.5">Color Code, Dye Lot, Weight Notes</label>
+                <input type="text" id="yarnFormNotes" class="input-pill no-icon" placeholder="e.g. Color #23, Dye Lot 2026-A, 50g per ball">
+              </div>
+
+              <!-- Action buttons -->
+              <div class="pt-4 flex flex-col sm:flex-row gap-3">
+                <button type="submit" class="btn-primary flex-1">Save Yarn</button>
+                <button type="button" id="yarnFormDeleteBtn" class="btn-pill-light !text-red-600 hidden" onclick="app.deleteCurrentYarn()">Delete Yarn</button>
+                <button type="button" class="btn-pill-light" onclick="app.navigate('stash')">Cancel</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- =====================================================================
+           SCREEN 6: PROJECTS OVERVIEW (Default: In-Progress / Uncompleted!)
+           ===================================================================== -->
+      <section id="screen-projects" class="screen-container">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div>
+            <h2 class="text-3xl font-black text-craftGreen tracking-tight">Crochet & Knitting Projects</h2>
+            <p class="text-sm text-gray-500 font-medium">Track your work in progress with visual percentage bars, hook and yarn records.</p>
+          </div>
+          <button class="btn-accent text-sm !py-2.5 !px-5" onclick="app.openAddProject()">
+            + Build New Project
+          </button>
+        </div>
+
+        <!-- Filter Tabs: In Progress (DEFAULT), Completed, All -->
+        <div class="flex gap-2 mb-8 overflow-x-auto pb-2">
+          <button id="projectFilterInProgress" class="filter-tab-pill active" onclick="app.setProjectFilter('in_progress')">
+            In Progress (Uncompleted) ⏳
+          </button>
+          <button id="projectFilterCompleted" class="filter-tab-pill" onclick="app.setProjectFilter('completed')">
+            Completed Projects 🎉
+          </button>
+          <button id="projectFilterAll" class="filter-tab-pill" onclick="app.setProjectFilter('ALL')">
+            All Projects (Overview)
+          </button>
+        </div>
+
+        <!-- Projects Grid -->
+        <div id="projectsListContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <!-- Populated dynamically -->
+        </div>
+      </section>
+
+
+      <!-- =====================================================================
+           SCREEN 7: THE BUILD & EDIT PROJECT PAGE
+           ===================================================================== -->
+      <section id="screen-project-form" class="screen-container">
+        <div class="max-w-2xl mx-auto">
+          <div class="flex items-center gap-3 mb-6">
+            <button class="nav-btn" onclick="app.navigate('projects')">
+              <svg class="w-5 h-5 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+            </button>
+            <h2 id="projectFormTitle" class="text-3xl font-black text-craftGreen">Build New Project</h2>
+          </div>
+
+          <div class="craft-card p-6 sm:p-8">
+            <form id="projectForm" onsubmit="app.handleSaveProject(event)" class="space-y-5">
+              <input type="hidden" id="projectFormId">
+
+              <!-- Project Photo -->
+              <div>
+                <label class="block text-xs font-bold text-craftGreen mb-2">Project Photo (Take photo of current progress)</label>
+                <div id="projPhotoPreviewBox" class="image-thumbnail-box" onclick="app.triggerPhotoUpload('projPhotoInput')">
+                  <img id="projPhotoImg" src="" class="hidden" alt="Project photo">
+                  <div id="projPhotoPlaceholder" class="text-center p-6">
+                    <div class="w-14 h-14 rounded-full bg-white flex items-center justify-center mx-auto mb-2 text-craftGreen shadow-sm">
+                      <svg class="w-7 h-7 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    </div>
+                    <p class="text-sm font-bold text-craftGreen">Snap or Upload Project Progress Photo</p>
+                    <p class="text-xs text-gray-400 mt-1">You can update the photo anytime as work progresses</p>
+                  </div>
+                </div>
+
+                <input type="file" id="projPhotoInput" accept="image/*" class="hidden" onchange="app.handleImageSelected(event, 'project')">
+
+                <div class="flex justify-end mt-2">
+                  <button type="button" class="text-xs font-bold text-craftGreen flex items-center gap-1.5 hover:underline" onclick="app.openWebcamModal('project')">
+                    <svg class="w-4 h-4 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                    Snap with Webcam
+                  </button>
+                </div>
+              </div>
+
+              <!-- Project Name -->
+              <div>
+                <label class="block text-xs font-bold text-craftGreen mb-1.5">Project Name *</label>
+                <input type="text" id="projectFormName" class="input-pill no-icon" placeholder="e.g. Mint Dinosaur Plushie 🦕" required>
+              </div>
+
+              <!-- Hook in Use (Requirement: Selected & can edit the 针 she have) -->
+              <div>
+                <div class="flex justify-between items-center mb-1.5">
+                  <label class="block text-xs font-bold text-craftGreen">Crochet Hook (针) in Use *</label>
+                  <button type="button" class="text-xs font-bold text-craftGreen underline" onclick="app.openAddHookModal()">+ Add New Hook</button>
+                </div>
+                <select id="projectFormHook" class="select-pill" required></select>
+              </div>
+
+              <!-- Yarn in Use (Selected from Stash) -->
+              <div>
+                <div class="flex justify-between items-center mb-1.5">
+                  <label class="block text-xs font-bold text-craftGreen">Yarn (线) in Use</label>
+                  <button type="button" class="text-xs font-bold text-craftGreen underline" onclick="app.openAddYarn()">+ Add New Yarn</button>
+                </div>
+                <select id="projectFormYarn" class="select-pill"></select>
+              </div>
+
+              <!-- Work Starting Day -->
+              <div>
+                <label class="block text-xs font-bold text-craftGreen mb-1.5">Work Starting Day *</label>
+                <input type="date" id="projectFormStartDate" class="input-pill no-icon" required>
+              </div>
+
+              <!-- Ongoing Percentage & Visual Slider -->
+              <div class="craft-card p-5 !rounded-2xl">
+                <div class="flex justify-between items-center mb-2">
+                  <label class="block text-xs font-bold text-craftGreen">Progress Completed (Percentage)</label>
+                  <span id="projectFormProgressBadge" class="craft-badge accent font-bold text-sm">50%</span>
+                </div>
+
+                <input type="range" id="projectFormProgressSlider" min="0" max="100" value="50" step="5" class="w-full accent-[#91E758] h-2.5 bg-gray-200 rounded-lg cursor-pointer" oninput="app.syncProjectProgress(this.value)">
+
+                <div class="flex gap-2 mt-4">
+                  <button type="button" class="btn-pill-light !py-1.5 !px-3 text-xs flex-1" onclick="app.adjustFormProgress(-10)">-10%</button>
+                  <button type="button" class="btn-pill-light !py-1.5 !px-3 text-xs flex-1" onclick="app.adjustFormProgress(10)">+10%</button>
+                  <button type="button" class="btn-accent !py-1.5 !px-3 text-xs flex-1 font-bold" onclick="app.syncProjectProgress(100)">100% Completed 🎉</button>
+                </div>
+              </div>
+
+              <!-- Notes & Row Counter -->
+              <div>
+                <label class="block text-xs font-bold text-craftGreen mb-1.5">Pattern Notes, Row Counter & Recipient</label>
+                <textarea id="projectFormNotes" rows="3" class="w-full p-4 rounded-2xl border border-gray-200 text-sm focus:border-craftGreen outline-none" placeholder="Round count, special stitches, hook modifications..."></textarea>
+              </div>
+
+              <!-- Action buttons -->
+              <div class="pt-4 flex flex-col sm:flex-row gap-3">
+                <button type="submit" class="btn-primary flex-1">Save Project</button>
+                <button type="button" id="projectFormDeleteBtn" class="btn-pill-light !text-red-600 hidden" onclick="app.deleteCurrentProject()">Delete Project</button>
+                <button type="button" class="btn-pill-light" onclick="app.navigate('projects')">Back</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- =====================================================================
+           SCREEN 8: HOOK COLLECTION (With Photo Support & Management)
+           ===================================================================== -->
+      <section id="screen-hooks" class="screen-container">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div>
+            <h2 class="text-3xl font-black text-craftGreen tracking-tight">Crochet Hooks Collection (钩针工具)</h2>
+            <p class="text-sm text-gray-500 font-medium">Add photos and manage all crochet hook sizes and brands you own.</p>
+          </div>
+          <button class="btn-accent text-sm !py-2.5 !px-5" onclick="app.openAddHookModal()">
+            + Add Crochet Hook
+          </button>
+        </div>
+
+        <div id="hooksListContainer" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
+          <!-- Populated dynamically with photos and details -->
+        </div>
+      </section>
+
+
+      <!-- =====================================================================
+           SCREEN 9: PROFILE, DATA BACKUP & REAL GOOGLE INTEGRATION SETTINGS
+           ===================================================================== -->
+      <section id="screen-profile" class="screen-container">
+        <div class="max-w-2xl mx-auto space-y-6">
+          <!-- User Profile Card -->
+          <div class="craft-card text-center p-8">
+            <div id="profileAvatar" class="w-24 h-24 rounded-full bg-craftPill text-craftGreen flex items-center justify-center text-4xl mx-auto mb-4 overflow-hidden shadow-inner">
+              🧶
+            </div>
+            <h3 id="profileName" class="text-2xl font-black text-craftGreen">Crafter</h3>
+            <p id="profileEmail" class="text-sm text-gray-500 mt-1">guest@yarncraft.local</p>
+            <div class="mt-4 flex flex-wrap justify-center gap-2">
+              <span class="craft-badge accent">IndexedDB Persistent Database Connected</span>
+              <span class="craft-badge">Standalone Desktop App Enabled</span>
+            </div>
+          </div>
+
+          <!-- Standalone Application Info Card -->
+          <div class="craft-card p-6">
+            <div class="flex items-center gap-3 mb-3">
+              <div class="w-10 h-10 rounded-xl bg-green-50 text-craftGreen flex items-center justify-center text-xl">
+                💻
+              </div>
+              <div>
+                <h4 class="font-extrabold text-craftGreen text-lg">Desktop & Phone Application</h4>
+                <p class="text-xs text-gray-500">Run as a standalone app without browser tabs</p>
+              </div>
+            </div>
+
+            <p class="text-xs text-gray-600 leading-relaxed mb-4">
+              YarnCraft can run as a <strong>dedicated standalone Windows application window</strong> with no browser address bar!
+            </p>
+
+            <div class="space-y-2.5">
+              <div class="p-3 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between">
+                <div>
+                  <p class="text-xs font-bold text-craftGreen">Launch as Desktop App:</p>
+                  <p class="text-[11px] text-gray-500">Double click <code class="text-craftGreen font-mono font-bold">Launch_App.vbs</code> or <code class="text-craftGreen font-mono font-bold">Run_App.bat</code></p>
+                </div>
+                <span class="craft-badge accent text-[10px]">1-Click Native</span>
+              </div>
+
+              <!-- Install PWA App Button (shown if browser supports install prompt) -->
+              <button id="pwaInstallBtn" class="btn-accent w-full !py-2.5 text-xs hidden" onclick="app.installPWA()">
+                📲 Install YarnCraft to Desktop / Phone Home Screen
+              </button>
+            </div>
+          </div>
+
+          <!-- Real Firebase Cloud & Multi-Device Sync Card -->
+          <div class="craft-card p-6 border-2 border-craftLime/30">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-800 flex items-center justify-center text-xl">
+                  ☁️
+                </div>
+                <div>
+                  <h4 class="font-extrabold text-craftGreen text-lg">Google Cloud & Device Sync</h4>
+                  <p class="text-xs text-gray-500">Real-time sync via Google Cloud Firestore</p>
+                </div>
+              </div>
+              <span id="profileCloudBadge" class="craft-badge accent text-xs">🟢 Connected</span>
+            </div>
+
+            <p class="text-xs text-gray-600 leading-relaxed mb-4">
+              Your craft inventory, hooks, and active projects are automatically stored in Google's cloud database. Any phone, tablet, or PC signed in with your Google account will synchronize instantly.
+            </p>
+
+            <div class="p-3.5 bg-gray-50 rounded-2xl border border-gray-100 text-xs space-y-2 mb-4">
+              <div class="flex items-center justify-between">
+                <span class="text-gray-500 font-medium">Firebase Project ID:</span>
+                <span class="font-mono font-bold text-craftGreen">yarncraft-ad7b5</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-gray-500 font-medium">Service Plan:</span>
+                <span class="craft-badge !py-0.5 !px-2 font-bold !bg-emerald-100 !text-emerald-800">Spark (100% Free Forever)</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-gray-500 font-medium">Signed-In Google Account:</span>
+                <span id="profileAccountStatus" class="font-semibold text-craftGreen">Checking status...</span>
+              </div>
+            </div>
+
+            <div class="flex gap-2">
+              <button class="btn-primary !py-2.5 text-xs flex-1 flex items-center justify-center gap-1.5" onclick="app.syncNowWithCloud()">
+                <span>🔄 Sync Now with Cloud</span>
+              </button>
+              <button id="profileGoogleSignBtn" class="btn-pill-light !py-2.5 text-xs" onclick="app.signInWithGoogle()">
+                Switch Google Account
+              </button>
+            </div>
+          </div>
+
+          <!-- Data Backup & Restore -->
+          <div class="craft-card p-6">
+            <h4 class="font-extrabold text-craftGreen text-lg mb-2 flex items-center gap-2">
+              <svg class="w-5 h-5 text-craftLime stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/></svg>
+              Database Backup & Transfer
+            </h4>
+            <p class="text-xs text-gray-500 leading-relaxed mb-4">
+              Export all your yarn inventory, hooks, project photos, and notes to a JSON file, or restore on any computer or smartphone.
+            </p>
+
+            <div class="grid grid-cols-2 gap-3">
+              <button class="btn-primary !py-2.5 text-xs" onclick="app.exportDatabaseBackup()">
+                <svg class="w-4 h-4 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                Export JSON Backup
+              </button>
+              <button class="btn-pill-light !py-2.5 text-xs" onclick="app.triggerImportBackup()">
+                <svg class="w-4 h-4 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                Import JSON Backup
+              </button>
+            </div>
+            <input type="file" id="importFileInput" accept=".json" class="hidden" onchange="app.handleImportBackup(event)">
+          </div>
+
+          <!-- Account Sign Out -->
+          <button class="btn-pill-light w-full !text-craftGreen font-bold" onclick="app.logout()">
+            Sign Out / Switch User
+          </button>
+        </div>
+      </section>
+
+    </main>
+
+
+    <!-- =====================================================================
+         MODAL 1: LIVE WEBCAM CAPTURE (For Laptop / PC Webcam)
+         ===================================================================== -->
+    <div id="webcamModal" class="modal-overlay">
+      <div class="modal-sheet">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-extrabold text-craftGreen text-lg">Webcam Snapshot</h3>
+          <button class="btn-sm-icon bg-gray-100" onclick="app.closeWebcamModal()">✕</button>
+        </div>
+        <div class="relative w-full h-64 bg-black rounded-2xl overflow-hidden mb-4">
+          <video id="webcamVideo" class="w-full h-full object-cover" autoplay playsinline></video>
+          <canvas id="webcamCanvas" class="hidden"></canvas>
+        </div>
+        <div class="flex gap-2">
+          <button type="button" class="btn-accent flex-1" onclick="app.captureWebcamSnapshot()">
+            📸 Take Photo
+          </button>
+          <button type="button" class="btn-pill-light !w-auto !px-5" onclick="app.closeWebcamModal()">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- =====================================================================
+         MODAL 2: MANAGE YARN TYPES (Categories)
+         ===================================================================== -->
+    <div id="manageTypesModal" class="modal-overlay">
+      <div class="modal-sheet">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-extrabold text-craftGreen text-lg">Manage Yarn Categories</h3>
+          <button class="btn-sm-icon bg-gray-100" onclick="app.closeManageTypesModal()">✕</button>
+        </div>
+        <p class="text-xs text-gray-500 mb-4">Add or remove custom yarn types. All dropdown filters will update immediately.</p>
+
+        <div class="flex gap-2 mb-4">
+          <input type="text" id="newTypeNameInput" class="input-pill no-icon !py-2.5 text-sm" placeholder="New Category Name (e.g. Mulberry Silk)">
+          <button class="btn-accent !w-auto !px-5 !py-2.5 text-xs whitespace-nowrap" onclick="app.handleAddNewType()">+ Add</button>
+        </div>
+
+        <div id="yarnTypesListContainer" class="space-y-2 max-h-60 overflow-y-auto">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+    </div>
+
+
+    <!-- =====================================================================
+         MODAL 3: ADD / EDIT HOOK MODAL (NOW WITH PHOTO SUPPORT!)
+         ===================================================================== -->
+    <div id="hookModal" class="modal-overlay">
+      <div class="modal-sheet">
+        <div class="flex items-center justify-between mb-3">
+          <h3 id="hookModalTitle" class="font-extrabold text-craftGreen text-lg">Add Crochet Hook (钩针)</h3>
+          <button class="btn-sm-icon bg-gray-100" onclick="app.closeHookModal()">✕</button>
+        </div>
+
+        <form onsubmit="app.handleSaveHook(event)" class="space-y-4">
+          <input type="hidden" id="hookFormId">
+
+          <!-- Hook Photo Upload / Capture (Requirement: 针线管理 make it can add image) -->
+          <div>
+            <label class="block text-xs font-bold text-craftGreen mb-1.5">Hook Photo (Optional)</label>
+            <div id="hookPhotoPreviewBox" class="image-thumbnail-box !h-36" onclick="app.triggerPhotoUpload('hookPhotoInput')">
+              <img id="hookPhotoImg" src="" class="hidden" alt="Hook photo">
+              <div id="hookPhotoPlaceholder" class="text-center p-4">
+                <div class="w-10 h-10 rounded-full bg-white flex items-center justify-center mx-auto mb-1 text-craftGreen shadow-sm">
+                  <svg class="w-5 h-5 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                </div>
+                <p class="text-xs font-bold text-craftGreen">Upload or Snap Hook Image</p>
+              </div>
+            </div>
+            <input type="file" id="hookPhotoInput" accept="image/*" class="hidden" onchange="app.handleImageSelected(event, 'hook')">
+
+            <div class="flex justify-end mt-1">
+              <button type="button" class="text-xs font-bold text-craftGreen flex items-center gap-1 hover:underline" onclick="app.openWebcamModal('hook')">
+                <svg class="w-3.5 h-3.5 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                Webcam Snapshot
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-craftGreen mb-1">Hook Size (e.g. 2.5mm / 4.0mm) *</label>
+            <input type="text" id="hookFormSize" class="input-pill no-icon !py-2.5 text-sm" placeholder="e.g. 2.5mm" required>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-craftGreen mb-1">Name / Brand</label>
+            <input type="text" id="hookFormName" class="input-pill no-icon !py-2.5 text-sm" placeholder="e.g. Tulip Etimo Rose">
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-craftGreen mb-1">Grip Material / Notes</label>
+            <input type="text" id="hookFormBrand" class="input-pill no-icon !py-2.5 text-sm" placeholder="e.g. Soft Ergonomic Rubber, Bamboo">
+          </div>
+
+          <div class="pt-2 flex gap-2">
+            <button type="submit" class="btn-primary flex-1 !py-3">Save Hook</button>
+            <button type="button" class="btn-pill-light !w-auto !px-5" onclick="app.closeHookModal()">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- =====================================================================
+         MODAL 4: GOOGLE OAUTH SETUP MODAL (Direct access from login screen)
+         ===================================================================== -->
+    <div id="googleSetupModal" class="modal-overlay">
+      <div class="modal-sheet">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2">
+            <span class="text-xl">🔑</span>
+            <h3 class="font-extrabold text-craftGreen text-lg">Connect Real Google Accounts</h3>
+          </div>
+          <button class="btn-sm-icon bg-gray-100" onclick="app.closeGoogleSetupModal()">✕</button>
+        </div>
+
+        <p class="text-xs text-gray-600 leading-relaxed mb-4">
+          To enable 1-click official Google login, you need a free <strong>Google OAuth Client ID</strong>. When users sign in, Google returns their real name, email, and photo, and our app instantly creates their real account in the database!
+        </p>
+
+        <div class="space-y-3 mb-4">
+          <div>
+            <label class="block text-xs font-bold text-craftGreen mb-1">Paste Your Google Client ID:</label>
+            <input type="text" id="modalGoogleClientIdInput" class="input-pill no-icon text-xs !py-2.5" placeholder="e.g. 123456789-xxxx.apps.googleusercontent.com">
+          </div>
+          <button class="btn-primary w-full !py-2.5 text-xs" onclick="app.saveGoogleClientIdFromModal()">
+            Save & Activate Google Sign-In
+          </button>
+        </div>
+
+        <div class="p-3.5 bg-gray-50 rounded-2xl border border-gray-100 text-xs text-gray-500 space-y-2">
+          <p class="font-bold text-craftGreen">Quick 2-Minute Setup Steps:</p>
+          <ol class="list-decimal pl-4 space-y-1 text-[11px] leading-relaxed">
+            <li>Visit <a href="https://console.cloud.google.com/apis/credentials" target="_blank" class="underline text-craftGreen font-bold">Google Cloud Console Credentials</a> (free).</li>
+            <li>Click <strong>Create Credentials &rarr; OAuth client ID</strong>.</li>
+            <li>Choose <strong>Web application</strong>.</li>
+            <li>In <em>Authorized JavaScript origins</em>, add: <code class="bg-white px-1 rounded border">http://localhost:8080</code> and <code class="bg-white px-1 rounded border">http://127.0.0.1:8080</code>.</li>
+            <li>Copy the Client ID and paste it in the box above!</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toastNotice" class="toast-notice">
+      <span id="toastIcon">✨</span>
+      <span id="toastMessage">Success</span>
+    </div>
+
+  </div> <!-- /web-app-container -->
+
+  <!-- App scripts -->
+  <script src="db.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
