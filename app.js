@@ -151,9 +151,11 @@ class CraftApp {
     // Refresh categories, hooks, and yarns in form dropdowns
     await this.refreshDropdowns();
 
-    // Register Service Worker for Standalone Application Mode
+    // Register Service Worker for Standalone Application Mode (v4)
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js').catch(err => {
+      navigator.serviceWorker.register('sw.js?v=4').then(reg => {
+        reg.update();
+      }).catch(err => {
         console.log('ServiceWorker registration optional:', err);
       });
     }
