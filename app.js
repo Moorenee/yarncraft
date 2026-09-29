@@ -3,6 +3,105 @@
  * Core Controller, State Management & Google Identity Services (GSI)
  */
 
+const THEME_PRESETS = {
+  teal: {
+    key: 'teal',
+    name: 'Ocean Teal',
+    primary: '#0D3331',
+    primaryHover: '#082422',
+    accent: '#2DD4BF',
+    accentHover: '#14B8A6',
+    accentLight: '#CCFBF1',
+    bg: '#EDF5F4',
+    card: '#FFFFFF',
+    pill: '#E2ECE9',
+    pillHover: '#D4E3E0',
+    textMain: '#0B2422',
+    textMuted: '#4B6361',
+    border: '#D1E1DD'
+  },
+  forest: {
+    key: 'forest',
+    name: 'Forest Matcha',
+    primary: '#1A3311',
+    primaryHover: '#12250C',
+    accent: '#8EE454',
+    accentHover: '#76CC3E',
+    accentLight: '#EDFBD8',
+    bg: '#F4F8F1',
+    card: '#FFFFFF',
+    pill: '#E5EFE0',
+    pillHover: '#D7E5D1',
+    textMain: '#13260D',
+    textMuted: '#4A5B44',
+    border: '#D3E3CC'
+  },
+  mocha: {
+    key: 'mocha',
+    name: 'Warm Mocha',
+    primary: '#3D2619',
+    primaryHover: '#2A1A10',
+    accent: '#E07A5F',
+    accentHover: '#C9654C',
+    accentLight: '#FDEEE9',
+    bg: '#FAF6F2',
+    card: '#FFFFFF',
+    pill: '#F0E5DC',
+    pillHover: '#E4D5CA',
+    textMain: '#2A1A10',
+    textMuted: '#685449',
+    border: '#E2D4C8'
+  },
+  rose: {
+    key: 'rose',
+    name: 'Blush Rose',
+    primary: '#431422',
+    primaryHover: '#2F0D17',
+    accent: '#F43F5E',
+    accentHover: '#E11D48',
+    accentLight: '#FFE4E6',
+    bg: '#FDF2F4',
+    card: '#FFFFFF',
+    pill: '#FCE1E6',
+    pillHover: '#F7CBD3',
+    textMain: '#320C17',
+    textMuted: '#6B424D',
+    border: '#F3CCD5'
+  },
+  lavender: {
+    key: 'lavender',
+    name: 'Lavender Mist',
+    primary: '#2B1C47',
+    primaryHover: '#1E1233',
+    accent: '#A855F7',
+    accentHover: '#9333EA',
+    accentLight: '#F3E8FF',
+    bg: '#F8F5FC',
+    card: '#FFFFFF',
+    pill: '#ECE4F7',
+    pillHover: '#DDD2EF',
+    textMain: '#1F1235',
+    textMuted: '#57486B',
+    border: '#DFD2EE'
+  },
+  nordic: {
+    key: 'nordic',
+    name: 'Nordic Slate',
+    primary: '#1E293B',
+    primaryHover: '#0F172A',
+    accent: '#38BDF8',
+    accentHover: '#0284C7',
+    accentLight: '#E0F2FE',
+    bg: '#F1F5F9',
+    card: '#FFFFFF',
+    pill: '#E2E8F0',
+    pillHover: '#CBD5E1',
+    textMain: '#0F172A',
+    textMuted: '#475569',
+    border: '#CBD5E1'
+  }
+};
+
 class CraftApp {
   constructor() {
     this.currentScreen = 'welcome';
@@ -16,6 +115,8 @@ class CraftApp {
     this.currentEditingProjectPhoto = '';
     this.currentEditingHookPhoto = '';
     this.googleClientId = '';
+    this.currentThemeKey = 'teal';
+    this.customPrimaryColor = '#0D3331';
   }
 
   async init() {
@@ -26,6 +127,9 @@ class CraftApp {
       console.error('Failed to init DB:', err);
       this.showToast('Database init issue, please refresh', '⚠️');
     }
+
+    // Initialize Theme & User Customizations
+    this.initTheme();
 
     // Connect cloud sync status listener
     window.yarnDB.onSyncStatusChange = (status) => this.updateSyncUI(status);
@@ -838,32 +942,47 @@ class CraftApp {
   renderProjectCardHTML(project, isDashboard = false) {
     const isDone = project.status === 'completed' || project.progress >= 100;
     const progress = project.progress || 0;
+    const dateText = isDone
+      ? (project.completedDate ? 'Finished ' + project.completedDate : (project.startDate ? 'Started ' + project.startDate : ''))
+      : (project.startDate ? 'Started ' + project.startDate : '');
 
     return `
-      <div class="craft-card p-5 space-y-4 cursor-pointer" onclick="app.openEditProject('${project.id}')">
-        <div class="flex gap-4 items-start">
-          <div class="w-20 h-20 rounded-2xl bg-gray-100 flex-shrink-0 overflow-hidden flex items-center justify-center shadow-xs">
-            ${project.image ? `<img src="${project.image}" class="w-full h-full object-cover">` : `<span class="text-3xl">🧶</span>`}
+      <div class="craft-card p-4 sm:p-5 space-y-3.5 cursor-pointer transition-all hover:shadow-md" onclick="app.openEditProject('${project.id}')">
+        <!-- Top Status & Date Header (Full Card Width - Never wraps awkwardly) -->
+        <div class="flex items-center justify-between gap-2 pb-2.5 border-b border-gray-100">
+          <span class="craft-badge ${isDone ? 'completed' : 'accent'} !text-[11px] font-bold !py-0.5 !px-2.5">
+            ${isDone ? 'Completed 🎉' : 'In Progress ⏳'}
+          </span>
+          <span class="text-xs font-semibold text-gray-400 whitespace-nowrap">
+            ${dateText}
+          </span>
+        </div>
+
+        <!-- Middle Content Row: Photo & Details -->
+        <div class="flex gap-3.5 sm:gap-4 items-center">
+          <div class="relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-gray-100 flex-shrink-0 overflow-hidden flex items-center justify-center shadow-xs border border-gray-100">
+            ${project.image ? `
+              <img src="${project.image}" class="w-full h-full object-cover" alt="${project.name}">
+            ` : `
+              <span class="text-3xl">🧶</span>
+            `}
+            ${isDone ? `
+              <div class="absolute inset-0 bg-emerald-900/35 backdrop-blur-[0.5px] flex items-center justify-center">
+                <span class="w-7 h-7 rounded-full bg-white text-emerald-800 flex items-center justify-center text-xs font-black shadow-sm">✓</span>
+              </div>
+            ` : ''}
           </div>
 
           <div class="flex-1 min-w-0">
-            <div class="flex items-center justify-between gap-1 mb-1">
-              <span class="craft-badge ${isDone ? 'completed' : 'accent'} !text-[11px] !py-0.5 !px-2.5">
-                ${isDone ? 'Completed 🎉' : 'In Progress ⏳'}
-              </span>
-              <span class="text-xs font-semibold text-gray-400">
-                ${project.startDate ? 'Started ' + project.startDate : ''}
-              </span>
-            </div>
-            <h4 class="font-extrabold text-craftGreen text-base truncate">${project.name}</h4>
+            <h4 class="font-extrabold text-craftGreen text-base sm:text-lg truncate mb-1" title="${project.name}">${project.name}</h4>
             
-            <div class="flex flex-wrap gap-1.5 mt-2">
+            <div class="flex flex-col gap-1">
               ${project.hookName ? `
-                <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-gray-600 bg-gray-100 px-2.5 py-0.5 rounded-full">
+                <span class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-gray-600 bg-gray-100/90 px-2.5 py-0.5 rounded-full truncate" title="${project.hookName}">
                   🥢 ${project.hookName}
                 </span>` : ''}
               ${project.yarnNames ? `
-                <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-gray-600 bg-gray-100 px-2.5 py-0.5 rounded-full truncate max-w-[180px]">
+                <span class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-gray-600 bg-gray-100/90 px-2.5 py-0.5 rounded-full truncate" title="${project.yarnNames}">
                   🧶 ${project.yarnNames}
                 </span>` : ''}
             </div>
@@ -874,21 +993,30 @@ class CraftApp {
         <div class="pt-1">
           <div class="flex justify-between items-center text-xs font-black text-craftGreen mb-1.5">
             <span class="text-gray-400 font-semibold">Progress Done</span>
-            <span class="${isDone ? 'text-green-700' : 'text-craftGreen'}">${progress}%</span>
+            <span class="${isDone ? 'text-emerald-700' : 'text-craftGreen'} font-bold">${progress}%</span>
           </div>
           <div class="progress-bar-bg">
             <div class="progress-bar-fill ${isDone ? 'completed' : ''}" style="width: ${progress}%;"></div>
           </div>
         </div>
 
-        <!-- Quick adjust buttons -->
-        <div class="flex gap-2 pt-2 border-t border-gray-100 items-center justify-between" onclick="event.stopPropagation()">
-          <span class="text-xs font-semibold text-gray-400">Quick adjust:</span>
-          <div class="flex gap-1.5">
-            <button class="btn-pill-light !py-1 !px-2.5 text-xs font-bold" onclick="app.quickAdjustProgress('${project.id}', 5)">+5%</button>
-            <button class="btn-pill-light !py-1 !px-2.5 text-xs font-bold" onclick="app.quickAdjustProgress('${project.id}', 10)">+10%</button>
-            <button class="btn-accent !py-1 !px-3 text-xs font-bold" onclick="app.quickAdjustProgress('${project.id}', 100, true)">100% Done</button>
-          </div>
+        <!-- Quick adjust & Completion row -->
+        <div class="flex flex-wrap gap-2 pt-2 border-t border-gray-100 items-center justify-between" onclick="event.stopPropagation()">
+          ${isDone ? `
+            <span class="text-xs font-bold text-emerald-700 flex items-center gap-1">
+              <span>🎉</span> 100% Completed
+            </span>
+            <button type="button" class="btn-pill-light !py-1 !px-3 text-xs font-bold text-gray-500 hover:text-craftGreen" onclick="app.quickAdjustProgress('${project.id}', 90, true)">
+              Reopen (90%)
+            </button>
+          ` : `
+            <span class="text-xs font-semibold text-gray-400">Quick adjust:</span>
+            <div class="flex gap-1.5 flex-shrink-0">
+              <button type="button" class="btn-pill-light !py-1 !px-2 text-xs font-bold" onclick="app.quickAdjustProgress('${project.id}', 5)">+5%</button>
+              <button type="button" class="btn-pill-light !py-1 !px-2 text-xs font-bold" onclick="app.quickAdjustProgress('${project.id}', 10)">+10%</button>
+              <button type="button" class="btn-accent !py-1 !px-2.5 text-xs font-bold whitespace-nowrap" onclick="app.quickAdjustProgress('${project.id}', 100, true)">100% Done</button>
+            </div>
+          `}
         </div>
       </div>
     `;
@@ -1361,6 +1489,235 @@ class CraftApp {
 
   renderProfilePage() {
     this.updateUserUI();
+    this.renderThemePresets();
+    this.updateCustomColorPickers(this.customPrimaryColor);
+  }
+
+  // =========================================================================
+  // APP COLOR THEME CUSTOMIZATION CONTROLLER
+  // =========================================================================
+  initTheme() {
+    try {
+      const saved = localStorage.getItem('yarncraft_theme_settings');
+      if (saved) {
+        const theme = JSON.parse(saved);
+        if (theme && theme.primary) {
+          this.currentThemeKey = theme.key || 'custom';
+          this.customPrimaryColor = theme.primary;
+          this.applyTheme(theme, false);
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn('Could not read saved theme:', e);
+    }
+    // Default fallback: Ocean Teal
+    this.applyThemePreset('teal', false);
+  }
+
+  applyTheme(theme, save = true) {
+    if (!theme || !theme.primary) return;
+
+    const root = document.documentElement;
+    root.style.setProperty('--color-primary', theme.primary);
+    root.style.setProperty('--color-primary-hover', theme.primaryHover || theme.primary);
+    root.style.setProperty('--color-accent', theme.accent);
+    root.style.setProperty('--color-accent-hover', theme.accentHover || theme.accent);
+    root.style.setProperty('--color-accent-light', theme.accentLight || theme.accent);
+    root.style.setProperty('--color-bg', theme.bg);
+    root.style.setProperty('--color-card', theme.card || '#FFFFFF');
+    root.style.setProperty('--color-pill', theme.pill);
+    root.style.setProperty('--color-pill-hover', theme.pillHover || theme.pill);
+    root.style.setProperty('--color-text-main', theme.textMain);
+    root.style.setProperty('--color-text-muted', theme.textMuted);
+    root.style.setProperty('--color-border', theme.border);
+
+    // Update mobile browser address bar meta color
+    const metaTheme = document.querySelector('meta[name="theme-color"]');
+    if (metaTheme) metaTheme.setAttribute('content', theme.primary);
+
+    if (save) {
+      try {
+        localStorage.setItem('yarncraft_theme_settings', JSON.stringify(theme));
+      } catch (e) {
+        console.warn('Could not save theme to localStorage:', e);
+      }
+      if (window.yarnDB && window.yarnDB.saveSetting) {
+        window.yarnDB.saveSetting('app_theme', theme).catch(() => {});
+      }
+    }
+
+    this.renderThemePresets();
+    this.updateCustomColorPickers(theme.primary);
+  }
+
+  applyThemePreset(presetKey, showToast = true) {
+    const preset = THEME_PRESETS[presetKey];
+    if (!preset) return;
+
+    this.currentThemeKey = presetKey;
+    this.customPrimaryColor = preset.primary;
+    this.applyTheme(preset, true);
+
+    if (showToast) {
+      this.showToast(`Switched theme to ${preset.name}!`, '🎨');
+    }
+  }
+
+  handleCustomColorChange(hex) {
+    if (!hex) return;
+    this.currentThemeKey = 'custom';
+    this.customPrimaryColor = hex;
+
+    const generatedTheme = this.generatePaletteFromHex(hex);
+    this.applyTheme(generatedTheme, true);
+    this.showToast('Custom theme color applied!', '✨');
+  }
+
+  resetThemeDefault() {
+    this.applyThemePreset('teal', true);
+  }
+
+  generatePaletteFromHex(hex) {
+    const { h, s, l } = this.hexToHsl(hex);
+
+    // Deep primary for optimal text contrast and rich buttons
+    const primaryL = Math.max(14, Math.min(22, l < 25 ? l : 18));
+    const primaryS = Math.max(35, Math.min(85, s));
+    const primary = this.hslToHex(h, primaryS, primaryL);
+    const primaryHover = this.hslToHex(h, primaryS, Math.max(8, primaryL - 6));
+
+    // Vibrant accent
+    const accentH = (h + 8) % 360;
+    const accentS = Math.max(70, Math.min(95, s > 30 ? s : 80));
+    const accentL = 52;
+    const accent = this.hslToHex(accentH, accentS, accentL);
+    const accentHover = this.hslToHex(accentH, accentS, 45);
+    const accentLight = this.hslToHex(accentH, 60, 92);
+
+    // Light, modern, super-clean canvas (no heavy gradients!)
+    const bg = this.hslToHex(h, 18, 97);
+    const pill = this.hslToHex(h, 16, 92);
+    const pillHover = this.hslToHex(h, 18, 87);
+    const textMain = this.hslToHex(h, 30, 11);
+    const textMuted = this.hslToHex(h, 14, 40);
+    const border = this.hslToHex(h, 16, 86);
+
+    return {
+      key: 'custom',
+      name: 'Custom Palette',
+      primary,
+      primaryHover,
+      accent,
+      accentHover,
+      accentLight,
+      bg,
+      card: '#FFFFFF',
+      pill,
+      pillHover,
+      textMain,
+      textMuted,
+      border
+    };
+  }
+
+  hexToHsl(hex) {
+    let r = 0, g = 0, b = 0;
+    hex = hex.replace(/^#/, '');
+    if (hex.length === 3) {
+      r = parseInt(hex[0] + hex[0], 16);
+      g = parseInt(hex[1] + hex[1], 16);
+      b = parseInt(hex[2] + hex[2], 16);
+    } else if (hex.length >= 6) {
+      r = parseInt(hex.substring(0, 2), 16);
+      g = parseInt(hex.substring(2, 4), 16);
+      b = parseInt(hex.substring(4, 6), 16);
+    }
+    r /= 255; g /= 255; b /= 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    let h = 0, s = 0, l = (max + min) / 2;
+    if (max !== min) {
+      const d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      switch (max) {
+        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+        case g: h = (b - r) / d + 2; break;
+        case b: h = (r - g) / d + 4; break;
+      }
+      h = Math.round(h * 60);
+    }
+    s = Math.round(s * 100);
+    l = Math.round(l * 100);
+    return { h, s, l };
+  }
+
+  hslToHex(h, s, l) {
+    s /= 100;
+    l /= 100;
+    const c = (1 - Math.abs(2 * l - 1)) * s;
+    const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+    const m = l - c / 2;
+    let r = 0, g = 0, b = 0;
+    if (h >= 0 && h < 60) { r = c; g = x; b = 0; }
+    else if (h >= 60 && h < 120) { r = x; g = c; b = 0; }
+    else if (h >= 120 && h < 180) { r = 0; g = c; b = x; }
+    else if (h >= 180 && h < 240) { r = 0; g = x; b = c; }
+    else if (h >= 240 && h < 300) { r = x; g = 0; b = c; }
+    else if (h >= 300 && h < 360) { r = c; g = 0; b = x; }
+    const toHex = (n) => Math.round((n + m) * 255).toString(16).padStart(2, '0');
+    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+  }
+
+  renderThemePresets() {
+    const containers = [
+      document.getElementById('modalThemePresets'),
+      document.getElementById('profileThemePresets')
+    ];
+
+    const presetsHtml = Object.values(THEME_PRESETS).map(preset => {
+      const isActive = this.currentThemeKey === preset.key;
+      return `
+        <div class="theme-swatch-card ${isActive ? 'active' : ''}" onclick="app.applyThemePreset('${preset.key}')">
+          <div class="theme-swatch-preview">
+            <span class="theme-swatch-dot" style="background-color: ${preset.primary};" title="Primary: ${preset.primary}"></span>
+            <span class="theme-swatch-dot" style="background-color: ${preset.accent};" title="Accent: ${preset.accent}"></span>
+            <span class="theme-swatch-dot" style="background-color: ${preset.bg}; border: 1.5px solid #d1d5db;" title="Canvas: ${preset.bg}"></span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold ${isActive ? 'text-craftGreen' : 'text-gray-700'}">${preset.name}</span>
+            ${isActive ? '<span class="text-xs text-craftGreen font-black">✓</span>' : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    containers.forEach(c => {
+      if (c) c.innerHTML = presetsHtml;
+    });
+  }
+
+  updateCustomColorPickers(hex) {
+    ['modalCustomColorPicker', 'profileCustomColorPicker'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el && hex) el.value = hex;
+    });
+
+    ['modalCustomColorHex', 'profileCustomColorHex'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el && hex) el.textContent = hex.toUpperCase();
+    });
+  }
+
+  openThemeModal() {
+    this.renderThemePresets();
+    this.updateCustomColorPickers(this.customPrimaryColor);
+    const modal = document.getElementById('themeModal');
+    if (modal) modal.classList.add('active');
+  }
+
+  closeThemeModal() {
+    const modal = document.getElementById('themeModal');
+    if (modal) modal.classList.remove('active');
   }
 
   showToast(msg, icon = '✨') {

@@ -9,20 +9,20 @@
   <link rel="apple-touch-icon" href="icon-192.png">
   <meta name="theme-color" content="#0D3331">
   <link rel="stylesheet" href="styles.css">
-  <!-- Tailwind CSS CDN for utility styling -->
+  <!-- Tailwind CSS CDN with reactive CSS variable bindings -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
       theme: {
         extend: {
           colors: {
-            craftGreen: '#0D3331',
-            craftLime: '#2DD4BF',
-            craftCream: '#EDF5F4',
-            craftPill: '#E2ECE9'
+            craftGreen: 'var(--color-primary)',
+            craftLime: 'var(--color-accent)',
+            craftCream: 'var(--color-bg)',
+            craftPill: 'var(--color-pill)'
           },
           borderRadius: {
-            'card': '28px'
+            'card': '24px'
           }
         }
       }
@@ -33,6 +33,32 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
   <script src="firebase-config.js"></script>
+  <!-- Instant Theme Settings Loader (Zero Flash) -->
+  <script>
+    (function() {
+      try {
+        const saved = localStorage.getItem('yarncraft_theme_settings');
+        if (saved) {
+          const t = JSON.parse(saved);
+          if (t && t.primary) {
+            const root = document.documentElement;
+            root.style.setProperty('--color-primary', t.primary);
+            root.style.setProperty('--color-primary-hover', t.primaryHover || t.primary);
+            root.style.setProperty('--color-accent', t.accent);
+            root.style.setProperty('--color-accent-hover', t.accentHover || t.accent);
+            root.style.setProperty('--color-accent-light', t.accentLight || t.accent);
+            root.style.setProperty('--color-bg', t.bg);
+            root.style.setProperty('--color-card', t.card || '#FFFFFF');
+            root.style.setProperty('--color-pill', t.pill);
+            root.style.setProperty('--color-pill-hover', t.pillHover || t.pill);
+            root.style.setProperty('--color-text-main', t.textMain);
+            root.style.setProperty('--color-text-muted', t.textMuted);
+            root.style.setProperty('--color-border', t.border);
+          }
+        }
+      } catch (e) {}
+    })();
+  </script>
 </head>
 <body>
   <!-- Ambient background curves -->
@@ -586,7 +612,7 @@
                   <span id="projectFormProgressBadge" class="craft-badge accent font-bold text-sm">50%</span>
                 </div>
 
-                <input type="range" id="projectFormProgressSlider" min="0" max="100" value="50" step="5" class="w-full accent-[#91E758] h-2.5 bg-gray-200 rounded-lg cursor-pointer" oninput="app.syncProjectProgress(this.value)">
+                <input type="range" id="projectFormProgressSlider" min="0" max="100" value="50" step="5" class="w-full accent-craftLime h-2.5 bg-gray-200 rounded-lg cursor-pointer" oninput="app.syncProjectProgress(this.value)">
 
                 <div class="flex gap-2 mt-4">
                   <button type="button" class="btn-pill-light !py-1.5 !px-3 text-xs flex-1" onclick="app.adjustFormProgress(-10)">-10%</button>
@@ -648,6 +674,45 @@
             <div class="mt-4 flex flex-wrap justify-center gap-2">
               <span class="craft-badge accent">IndexedDB Persistent Database Connected</span>
               <span class="craft-badge">Standalone Desktop App Enabled</span>
+            </div>
+          </div>
+
+          <!-- App Appearance & Color Theme Customization Card -->
+          <div class="craft-card p-6">
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-craftPill text-craftGreen flex items-center justify-center text-xl">
+                  🎨
+                </div>
+                <div>
+                  <h4 class="font-extrabold text-craftGreen text-lg">App Color Theme</h4>
+                  <p class="text-xs text-gray-500">Personalize your workspace palette & colors</p>
+                </div>
+              </div>
+              <button type="button" class="btn-pill-light !py-1.5 !px-3 text-xs font-bold" onclick="app.resetThemeDefault()">
+                ↺ Reset Default
+              </button>
+            </div>
+
+            <p class="text-xs text-gray-600 leading-relaxed mb-4">
+              Select one of the curated cozy craft themes or choose any custom color you love.
+            </p>
+
+            <!-- Theme Preset Swatches Grid -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 mb-4" id="profileThemePresets">
+              <!-- Populated by JavaScript -->
+            </div>
+
+            <!-- Custom Color Wheel Picker -->
+            <div class="color-picker-wrapper">
+              <input type="color" id="profileCustomColorPicker" class="color-picker-input" onchange="app.handleCustomColorChange(this.value)" value="#0D3331">
+              <div class="flex-1">
+                <div class="flex items-center justify-between">
+                  <label for="profileCustomColorPicker" class="text-xs font-bold text-craftGreen cursor-pointer">Custom Color Wheel</label>
+                  <span id="profileCustomColorHex" class="font-mono text-[11px] font-bold text-gray-500">#0D3331</span>
+                </div>
+                <p class="text-[11px] text-gray-400">Pick any custom shade to create a harmonious UI</p>
+              </div>
             </div>
           </div>
 
@@ -900,6 +965,52 @@
             <li>In <em>Authorized JavaScript origins</em>, add: <code class="bg-white px-1 rounded border">http://localhost:8080</code> and <code class="bg-white px-1 rounded border">http://127.0.0.1:8080</code>.</li>
             <li>Copy the Client ID and paste it in the box above!</li>
           </ol>
+        </div>
+      </div>
+    </div>
+
+    <!-- =====================================================================
+         MODAL 5: COLOR THEME CUSTOMIZER (Presets + Custom Color Picker)
+         ===================================================================== -->
+    <div id="themeModal" class="modal-overlay">
+      <div class="modal-sheet max-w-lg">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2">
+            <span class="text-2xl">🎨</span>
+            <div>
+              <h3 class="font-extrabold text-craftGreen text-lg">Customize App Colors</h3>
+              <p class="text-xs text-gray-500">Pick a cozy palette or customize with the color wheel</p>
+            </div>
+          </div>
+          <button class="btn-sm-icon bg-gray-100" onclick="app.closeThemeModal()">✕</button>
+        </div>
+
+        <!-- Curated Preset Palettes -->
+        <label class="block text-xs font-bold text-craftGreen mb-2">Curated Craft Palettes</label>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 mb-5" id="modalThemePresets">
+          <!-- Populated by JavaScript -->
+        </div>
+
+        <!-- Custom Color Picker -->
+        <label class="block text-xs font-bold text-craftGreen mb-2">Or Pick Any Custom Color</label>
+        <div class="color-picker-wrapper mb-5">
+          <input type="color" id="modalCustomColorPicker" class="color-picker-input" onchange="app.handleCustomColorChange(this.value)" value="#0D3331">
+          <div class="flex-1">
+            <div class="flex items-center justify-between">
+              <label for="modalCustomColorPicker" class="text-xs font-bold text-craftGreen cursor-pointer">Custom Color Wheel</label>
+              <span id="modalCustomColorHex" class="font-mono text-[11px] font-bold text-gray-500">#0D3331</span>
+            </div>
+            <p class="text-[11px] text-gray-400">Instantly creates a clean, harmonious theme</p>
+          </div>
+        </div>
+
+        <div class="pt-2 flex gap-2">
+          <button type="button" class="btn-pill-light flex-1 !py-2.5 text-xs font-bold" onclick="app.resetThemeDefault()">
+            ↺ Reset Default
+          </button>
+          <button type="button" class="btn-primary !w-auto !px-6 !py-2.5 text-xs font-bold" onclick="app.closeThemeModal()">
+            Done
+          </button>
         </div>
       </div>
     </div>
