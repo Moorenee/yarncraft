@@ -1,13 +1,17 @@
 // YarnCraft Companion - Service Worker for Standalone App & Offline Cache
-const CACHE_NAME = 'yarncraft-v2';
+const CACHE_NAME = 'yarncraft-v3';
 const ASSETS = [
   './',
   './index.html',
   './styles.css',
   './app.js',
   './db.js',
+  './firebase-config.js',
   './manifest.json',
-  './icon.svg'
+  './icon.svg',
+  './icon.png',
+  './icon-192.png',
+  './icon-512.png'
 ];
 
 self.addEventListener('install', (e) => {

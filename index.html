@@ -5,8 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>YarnCraft Companion | Stash & WIP Tracker</title>
   <link rel="manifest" href="manifest.json">
-  <link rel="icon" type="image/svg+xml" href="icon.svg">
-  <meta name="theme-color" content="#1A3311">
+  <link rel="icon" type="image/png" href="icon-192.png">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <meta name="theme-color" content="#0D3331">
   <link rel="stylesheet" href="styles.css">
   <!-- Tailwind CSS CDN for utility styling -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -15,10 +16,10 @@
       theme: {
         extend: {
           colors: {
-            craftGreen: '#1A3311',
-            craftLime: '#91E758',
-            craftCream: '#F6F8F2',
-            craftPill: '#EEF3E9'
+            craftGreen: '#0D3331',
+            craftLime: '#2DD4BF',
+            craftCream: '#EDF5F4',
+            craftPill: '#E2ECE9'
           },
           borderRadius: {
             'card': '28px'
@@ -46,9 +47,11 @@
         <!-- Logo -->
         <div class="flex items-center justify-between">
           <a href="javascript:void(0)" class="site-logo" onclick="app.navigate('dashboard')">
-            <div class="site-logo-icon">🧶</div>
+            <div class="site-logo-icon !p-0.5 overflow-hidden bg-white border border-craftLime/40 shadow-xs">
+              <img src="icon-192.png" alt="Logo" class="w-full h-full object-contain">
+            </div>
             <div>
-              <span>YarnCraft</span>
+              <span class="text-craftGreen">YarnCraft</span>
               <span class="text-xs block font-medium text-craftLime -mt-1 tracking-normal font-sans">Companion</span>
             </div>
           </a>
@@ -107,34 +110,10 @@
       <section id="screen-welcome" class="screen-container active">
         <div class="auth-box-wrapper">
           <div class="craft-card text-center p-8 sm:p-10">
-            <!-- Minimalist Line Illustration -->
+            <!-- Crafter Line Illustration from user -->
             <div class="w-full flex justify-center mb-6">
-              <div class="relative w-56 h-56 flex items-center justify-center">
-                <svg class="w-52 h-52" viewBox="0 0 200 200" fill="none" stroke="#1A3311" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M 30 150 Q 100 155 170 150" stroke-width="1.8" />
-                  <path d="M 75 145 C 75 120, 85 105, 100 105 C 115 105, 125 120, 125 145 Z" fill="#EEF3E9" />
-                  <path d="M 82 118 Q 65 128 72 142" />
-                  <path d="M 118 118 Q 135 128 128 142" />
-                  <line x1="120" y1="145" x2="90" y2="135" stroke="#91E758" stroke-width="3" />
-                  <circle cx="90" cy="135" r="2" fill="#1A3311" />
-                  <circle cx="100" cy="80" r="18" fill="#FFFFFF" />
-                  <circle cx="95" cy="79" r="4.5" />
-                  <circle cx="105" cy="79" r="4.5" />
-                  <path d="M 99.5 79 L 100.5 79" />
-                  <path d="M 97 86 Q 100 89 103 86" />
-                  <path d="M 83 75 Q 80 62 95 62 Q 100 56 108 62 Q 118 60 117 74" fill="#1A3311" />
-                  <circle cx="100" cy="56" r="8" fill="#1A3311" />
-                  <path d="M 82 78 C 80 65, 120 65, 118 78" stroke-width="3" />
-                  <rect x="79" y="75" width="5" height="12" rx="2.5" fill="#1A3311" />
-                  <rect x="116" y="75" width="5" height="12" rx="2.5" fill="#1A3311" />
-                  <ellipse cx="50" cy="142" rx="18" ry="12" fill="#FFFFFF" />
-                  <path d="M 32 142 Q 50 160 68 142" fill="#FFFFFF" />
-                  <circle cx="50" cy="132" r="12" fill="#EBF9E1" stroke="#91E758" stroke-width="2" />
-                  <path d="M 44 128 Q 52 133 48 140" stroke="#1A3311" stroke-width="1.5" />
-                  <path d="M 48 123 Q 56 128 54 136" stroke="#1A3311" stroke-width="1.5" />
-                  <path d="M 60 130 Q 75 125 90 135" stroke="#91E758" stroke-dasharray="2 2" stroke-width="2" />
-                  <path d="M 140 85 C 136 78, 127 82, 134 92 L 140 98 L 146 92 C 153 82, 144 78, 140 85 Z" fill="#91E758" stroke="none" />
-                </svg>
+              <div class="relative w-64 h-52 flex items-center justify-center p-3 rounded-3xl bg-craftPill/50 border border-craftLime/20">
+                <img src="icon.png" alt="YarnCraft Crafter" class="max-h-full max-w-full object-contain">
               </div>
             </div>
 
@@ -403,9 +382,9 @@
           </div>
         </div>
 
-        <!-- Yarn Items Grid -->
-        <div id="stashItemsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          <!-- Populated dynamically -->
+        <!-- Yarn Items Card Grid (2 columns on mobile, matching dashboard) -->
+        <div id="stashItemsList" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5 sm:gap-5">
+          <!-- Populated dynamically as cards -->
         </div>
       </section>
 

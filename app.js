@@ -85,6 +85,19 @@ class CraftApp {
       return;
     }
 
+    // Check for redirect sign-in result (essential for mobile Safari & Android browsers)
+    window.firebaseAuth.getRedirectResult().then(async (result) => {
+      if (result && result.user) {
+        console.log('🔥 Signed in via mobile redirect:', result.user.email);
+        this.showToast(`Welcome back, ${result.user.displayName || 'Crafter'}!`, '🎉');
+      }
+    }).catch((err) => {
+      console.warn('Redirect auth check warning:', err);
+      if (err.code === 'auth/unauthorized-domain') {
+        this.showUnauthorizedDomainAlert();
+      }
+    });
+
     window.firebaseAuth.onAuthStateChanged(async (fbUser) => {
       if (fbUser) {
         console.log('🔥 Firebase Auth State: User signed in:', fbUser.email);
@@ -125,6 +138,19 @@ class CraftApp {
     });
   }
 
+  showUnauthorizedDomainAlert() {
+    const curDomain = window.location.hostname || 'moorenee.github.io';
+    alert(
+      "⚠️ Google Sign-In Needs Domain Authorization!\n\n" +
+      "Google requires your domain to be approved before allowing login:\n\n" +
+      "1. Open Firebase Console (https://console.firebase.google.com)\n" +
+      "2. Select project 'yarncraft-ad7b5'\n" +
+      "3. Go to: Authentication > Settings > Authorized domains\n" +
+      "4. Click 'Add domain' and add: " + curDomain + "\n\n" +
+      "Once saved in Firebase, Google Sign-In will work immediately!"
+    );
+  }
+
   async signInWithGoogle() {
     if (!window.firebaseAuth) {
       this.showToast('Connecting to Firebase...', '🔄');
@@ -132,41 +158,64 @@ class CraftApp {
     }
 
     try {
-      this.showToast('Opening Google Sign-In...', '🔑');
+      this.showToast('Connecting to Google...', '🔑');
       const provider = new firebase.auth.GoogleAuthProvider();
       provider.setCustomParameters({ prompt: 'select_account' });
-      const result = await window.firebaseAuth.signInWithPopup(provider);
-      const fbUser = result.user;
-      
-      const googleUser = {
-        id: fbUser.uid,
-        uid: fbUser.uid,
-        email: fbUser.email,
-        name: fbUser.displayName || 'Google Crafter',
-        picture: fbUser.photoURL || '',
-        platform: 'Google'
-      };
 
-      window.yarnDB.setUserId(fbUser.uid);
-      await window.yarnDB.setCurrentSession(googleUser);
-      this.currentUser = googleUser;
-      this.updateUserUI();
-      this.showToast(`Welcome, ${googleUser.name}! (Google Cloud Synced)`, '🎉');
+      // Determine if running on mobile browser (iPhone, Android, or narrow screen)
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth < 768;
 
-      // Sync cloud data
-      await window.yarnDB.pullAllFromCloud(fbUser.uid);
-      // Also push any local creations to the cloud so nothing is lost
-      await window.yarnDB.pushAllToCloud(fbUser.uid);
-      await this.refreshDropdowns();
-      this.navigate('dashboard');
+      let fbUser = null;
+      if (isMobile) {
+        // Mobile browsers frequently block popup windows: attempt popup, gracefully fallback to redirect
+        try {
+          const result = await window.firebaseAuth.signInWithPopup(provider);
+          fbUser = result.user;
+        } catch (popupErr) {
+          if (popupErr.code === 'auth/popup-blocked' || popupErr.code === 'auth/cancelled-popup-request') {
+            this.showToast('Opening Google Sign-In...', '🔑');
+            await window.firebaseAuth.signInWithRedirect(provider);
+            return;
+          } else {
+            throw popupErr;
+          }
+        }
+      } else {
+        // Desktop browser popup
+        const result = await window.firebaseAuth.signInWithPopup(provider);
+        fbUser = result.user;
+      }
+
+      if (fbUser) {
+        const googleUser = {
+          id: fbUser.uid,
+          uid: fbUser.uid,
+          email: fbUser.email,
+          name: fbUser.displayName || 'Google Crafter',
+          picture: fbUser.photoURL || '',
+          platform: 'Google'
+        };
+
+        window.yarnDB.setUserId(fbUser.uid);
+        await window.yarnDB.setCurrentSession(googleUser);
+        this.currentUser = googleUser;
+        this.updateUserUI();
+        this.showToast(`Welcome, ${googleUser.name}! (Google Cloud Synced)`, '🎉');
+
+        // Sync cloud data
+        await window.yarnDB.pullAllFromCloud(fbUser.uid);
+        await window.yarnDB.pushAllToCloud(fbUser.uid);
+        await this.refreshDropdowns();
+        this.navigate('dashboard');
+      }
     } catch (err) {
       console.error('Google Sign-In Error:', err);
-      if (err.code === 'auth/popup-closed-by-user') {
+      if (err.code === 'auth/unauthorized-domain') {
+        this.showUnauthorizedDomainAlert();
+      } else if (err.code === 'auth/popup-closed-by-user') {
         this.showToast('Sign-in cancelled', 'ℹ️');
-      } else if (err.code === 'auth/unauthorized-domain') {
-        this.showToast('Please add current domain to Firebase Authorized Domains', '⚠️');
       } else {
-        this.showToast('Google Sign-In: ' + (err.message || 'Error occurred'), '❌');
+        alert('Google Sign-In Error: ' + (err.message || err.code));
       }
     }
   }
@@ -629,28 +678,28 @@ class CraftApp {
     }
 
     container.innerHTML = yarns.map(y => `
-      <div class="craft-card p-4 flex gap-4 items-center">
-        <!-- Photo -->
-        <div class="w-24 h-24 rounded-2xl bg-gray-100 flex-shrink-0 overflow-hidden flex items-center justify-center cursor-pointer shadow-xs" onclick="app.openEditYarn('${y.id}')">
-          ${y.image ? `<img src="${y.image}" class="w-full h-full object-cover">` : `<span class="text-4xl">🧶</span>`}
-        </div>
-
-        <!-- Info -->
-        <div class="flex-1 min-w-0 cursor-pointer" onclick="app.openEditYarn('${y.id}')">
-          <div class="flex items-center gap-1.5 mb-1.5">
-            <span class="craft-badge accent !text-[11px] !py-0.5 !px-2.5">${y.typeName || 'General'}</span>
+      <div class="craft-card p-3 sm:p-4 flex flex-col justify-between !rounded-2xl transition-all hover:shadow-md border border-gray-100/80">
+        <!-- Top Photo & Category Badge -->
+        <div class="cursor-pointer" onclick="app.openEditYarn('${y.id}')">
+          <div class="w-full h-32 sm:h-36 rounded-xl bg-gray-100 overflow-hidden mb-2.5 relative flex items-center justify-center shadow-xs">
+            ${y.image ? `<img src="${y.image}" class="w-full h-full object-cover">` : `<span class="text-4xl">🧶</span>`}
+            <span class="absolute top-2 right-2 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-white/95 text-craftGreen shadow-xs backdrop-blur-xs">
+              ${y.typeName || 'Yarn'}
+            </span>
           </div>
-          <h4 class="font-extrabold text-craftGreen text-base truncate">${y.name}</h4>
-          <p class="text-xs text-gray-400 mt-1 truncate">${y.colorNotes || 'No dye lot notes'}</p>
+
+          <!-- Yarn Name & Color Notes -->
+          <h4 class="font-bold text-craftGreen text-sm line-clamp-1 mb-0.5" title="${y.name}">${y.name}</h4>
+          <p class="text-[11px] text-gray-400 line-clamp-1 mb-2">${y.colorNotes || 'Tap to edit details'}</p>
         </div>
 
-        <!-- Stepper -->
-        <div class="flex flex-col items-end gap-1.5 flex-shrink-0">
-          <span class="text-[11px] font-bold text-gray-400">Amount</span>
-          <div class="stepper-container">
-            <button class="stepper-btn" onclick="app.quickAdjustYarn('${y.id}', -1, event)">-</button>
-            <span class="stepper-count font-black text-sm">${y.amount}</span>
-            <button class="stepper-btn" onclick="app.quickAdjustYarn('${y.id}', 1, event)">+</button>
+        <!-- Quick Stepper (+/-) -->
+        <div class="flex items-center justify-between mt-auto pt-2.5 border-t border-gray-100">
+          <span class="text-[11px] font-bold text-gray-400">Skeins</span>
+          <div class="stepper-container !p-0.5">
+            <button class="stepper-btn !w-6 !h-6 !text-sm" onclick="app.quickAdjustYarn('${y.id}', -1, event)" title="Decrease">-</button>
+            <span class="stepper-count !min-w-[26px] !text-xs font-black">${y.amount}</span>
+            <button class="stepper-btn !w-6 !h-6 !text-sm" onclick="app.quickAdjustYarn('${y.id}', 1, event)" title="Increase">+</button>
           </div>
         </div>
       </div>
